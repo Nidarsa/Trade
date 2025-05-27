@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - BFM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold">BFM</a>
+            <div class="space-x-4">
+                <a href="/" class="hover:underline">Home</a>
+                <a href="/products" class="hover:underline">Products</a>
+                <a href="/add_product" class="hover:underline">Add Product</a>
+                <a href="/cart" class="hover:underline">Cart</a>
+                <a href="/orders" class="hover:underline">Orders</a>
+                <a href="/balance" class="hover:underline">Balance</a>
+                <button onclick="logout()" class="hover:underline">Logout</button>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto mt-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Products</h1>
+        <div id="products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        async function loadProducts() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please log in to view products');
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/product', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert('Session expired. Please log in again.');
+                        localStorage.removeItem('token');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const products = await response.json();
+                const productsDiv = document.getElementById('products');
+                productsDiv.innerHTML = '';
+                if (products.length === 0) {
+                    productsDiv.innerHTML = '<p class="text-gray-600 text-center col-span-3">No products available.</p>';
+                    return;
+                }
+                products.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-lg shadow-md p-4';
+                    card.innerHTML = `
+                        <img src="${product.image}" alt="${product.description}" class="w-full h-48 object-cover rounded-t-lg">
+                        <div class="p-4">
+                            <h2 class="text-xl font-semibold">${product.description}</h2>
+                            <p class="text-gray-600">Price: $${product.price}</p>
+                            <p class="text-gray-600">Stock: ${product.quantity}</p>
+                            <div class="mt-4 flex items-center space-x-2">
+                                <input type="number" id="quantity-${product.id}" min="1" value="1" class="w-20 p-2 border rounded" required>
+                                <button onclick="addToCart(${product.id})" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add to Cart</button>
+                            </div>
+                        </div>
+                    `;
+                    productsDiv.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading products:', error);
+                alert('Error loading products. Please try again.');
+            }
+        }
+
+        async function addToCart(productId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please log in to add to cart');
+                window.location.href = '/login';
+                return;
+            }
+
+            const quantityInput = document.getElementById(`quantity-${productId}`);
+            const quantity = parseInt(quantityInput.value);
+            if (isNaN(quantity) || quantity < 1) {
+                alert('Please enter a valid quantity');
+                return;
+            }
+
+            const jwtData = parseJwt(token);
+            if (!jwtData) {
+                alert('Invalid token. Please log in again.');
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        productId,
+                        quantity
+                    })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Product added to cart!');
+                    quantityInput.value = 1; // Reset quantity
+                } else {
+                    if (response.status === 401) {
+                        alert('Session expired. Please log in again.');
+                        localStorage.removeItem('token');
+                        window.location.href = '/login';
+                    } else {
+                        alert(data.message || 'Error adding to cart');
+                    }
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                alert('Error adding to cart. Please try again.');
+            }
+        }
+
+        window.onload = loadProducts;
+    </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - BFM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold">BFM</a>
+            <div class="space-x-4">
+                <a href="/" class="hover:underline">Home</a>
+                <a href="/products" class="hover:underline">Products</a>
+                <a href="/cart" class="hover:underline">Cart</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto mt-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Your Cart</h1>
+        <div id="cartItems" class="space-y-4"></div>
+        <div class="mt-8">
+            <input type="text" id="cardNumber" placeholder="Card Number" class="p-2 border rounded">
+            <button onclick="processPayment()" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Checkout</button>
+        </div>
+    </div>
+    <script>
+        async function loadCart() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('/api/cart', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const items = await response.json();
+                const cartItemsDiv = document.getElementById('cartItems');
+                cartItemsDiv.innerHTML = '';
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white rounded-lg shadow-md p-4 flex items-center';
+                    div.innerHTML = `
+                        <img src="${item.image}" alt="${item.description}" class="w-24 h-24 object-cover rounded">
+                        <div class="ml-4">
+                            <h2 class="text-xl font-semibold">${item.description}</h2>
+                            <p class="text-gray-600">Price: $${item.price}</p>
+                            <p class="text-gray-600">Quantity: ${item.quantity}</p>
+                        </div>
+                    `;
+                    cartItemsDiv.appendChild(div);
+                });
+                window.cartItems = items; // Store for checkout
+            } catch (error) {
+                alert('Error loading cart');
+            }
+        }
+        async function processPayment() {
+            const token = localStorage.getItem('token');
+            const cardNumber = document.getElementById('cardNumber').value;
+            try {
+                const response = await fetch('/api/payment/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ cartItems: window.cartItems, cardNumber })
+                });
+                const data = await response.json();
+                alert(data.message);
+                if (response.ok) {
+                    window.location.href = '/orders';
+                }
+            } catch (error) {
+                alert('Error processing payment');
+            }
+        }
+        window.onload = loadCart;
+    </script>
+</body>
+</html>

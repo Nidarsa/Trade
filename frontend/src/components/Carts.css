@@ -1,0 +1,13 @@
+/* cart.css */
+.card {
+  transition: transform 0.2s;
+}
+.card:hover {
+  transform: scale(1.02);
+}
+.alert {
+  margin-bottom: 1rem;
+}
+.img-fluid {
+  width: 100%;
+}

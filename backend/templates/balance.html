@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance - BFM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-blue-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold">BFM</a>
+            <div class="space-x-4">
+                <a href="/" class="hover:underline">Home</a>
+                <a href="/products" class="hover:underline">Products</a>
+                <a href="/add_product" class="hover:underline">Add Product</a>
+                <a href="/cart" class="hover:underline">Cart</a>
+                <a href="/orders" class="hover:underline">Orders</a>
+                <a href="/balance" class="hover:underline">Balance</a>
+                <button onclick="logout()" class="hover:underline">Logout</button>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto mt-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Your Balance</h1>
+        <div id="balance" class="bg-white p-6 rounded shadow-md max-w-lg mx-auto mb-8"></div>
+        <div id="balanceForms" class="bg-white p-6 rounded shadow-md max-w-lg mx-auto"></div>
+    </div>
+    <script>
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        async function loadBalance() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please log in to view your balance');
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                // Fetch user role and balance
+                const balanceResponse = await fetch('/api/balance', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!balanceResponse.ok) {
+                    if (balanceResponse.status === 401) {
+                        alert('Session expired. Please log in again.');
+                        localStorage.removeItem('token');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${balanceResponse.status}`);
+                }
+                const balanceData = await balanceResponse.json();
+
+                // Decode token to get role (client-side, for simplicity)
+                const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                const role = tokenPayload.role;
+
+                const balanceDiv = document.getElementById('balance');
+                const balanceFormsDiv = document.getElementById('balanceForms');
+                balanceDiv.innerHTML = `
+                    <h2 class="text-xl font-semibold mb-4">Current Balance</h2>
+                    <p class="text-2xl text-gray-600">$${balanceData.balance.toFixed(2)}</p>
+                `;
+
+                // Buyer: Add balance form
+                if (role === 'buyer') {
+                    balanceFormsDiv.innerHTML = `
+                        <h2 class="text-xl font-semibold mb-4">Add Funds</h2>
+                        <form id="addBalanceForm" class="space-y-4">
+                            <div>
+                                <label for="amount" class="block text-gray-600">Amount ($)</label>
+                                <input type="number" id="amount" name="amount" min="1" step="0.01" class="w-full p-2 border rounded" required>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Add to Balance</button>
+                        </form>
+                    `;
+                    document.getElementById('addBalanceForm').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const amount = parseFloat(document.getElementById('amount').value);
+                        if (isNaN(amount) || amount <= 0) {
+                            alert('Please enter a valid amount');
+                            return;
+                        }
+                        try {
+                            const response = await fetch('/api/balance/add', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ amount })
+                            });
+                            const data = await response.json();
+                            if (response.ok) {
+                                alert('Balance added successfully');
+                                window.location.reload();
+                            } else {
+                                alert(data.message || 'Error adding balance');
+                            }
+                        } catch (error) {
+                            console.error('Error adding balance:', error);
+                            alert('Error adding balance. Please try again.');
+                        }
+                    });
+                }
+
+                // Admin: Update balance form
+                if (role === 'admin') {
+                    // Fetch all users
+                    const usersResponse = await fetch('/api/admin/all-users', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!usersResponse.ok) {
+                        throw new Error(`HTTP error! status: ${usersResponse.status}`);
+                    }
+                    const users = await usersResponse.json();
+
+                    balanceFormsDiv.innerHTML = `
+                        <h2 class="text-xl font-semibold mb-4">Update User Balance</h2>
+                        <form id="updateBalanceForm" class="space-y-4">
+                            <div>
+                                <label for="userId" class="block text-gray-600">Select User</label>
+                                <select id="userId" name="userId" class="w-full p-2 border rounded" required>
+                                    <option value="">Select a user</option>
+                                    ${users.map(user => `<option value="${user.id}">${user.name} (${user.email}) - ${user.role}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="balance" class="block text-gray-600">New Balance ($)</label>
+                                <input type="number" id="balance" name="balance" min="0" step="0.01" class="w-full p-2 border rounded" required>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Update Balance</button>
+                        </form>
+                    `;
+                    document.getElementById('updateBalanceForm').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const userId = parseInt(document.getElementById('userId').value);
+                        const balance = parseFloat(document.getElementById('balance').value);
+                        if (isNaN(userId) || isNaN(balance) || balance < 0) {
+                            alert('Please select a user and enter a valid balance');
+                            return;
+                        }
+                        try {
+                            const response = await fetch('/api/balance', {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ userId, balance })
+                            });
+                            const data = await response.json();
+                            if (response.ok) {
+                                alert('Balance updated successfully');
+                                window.location.reload();
+                            } else {
+                                alert(data.message || 'Error updating balance');
+                            }
+                        } catch (error) {
+                            console.error('Error updating balance:', error);
+                            alert('Error updating balance. Please try again.');
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading balance:', error);
+                document.getElementById('balance').innerHTML = '<p class="text-red-600 text-center">Error loading balance. Please try again.</p>';
+            }
+        }
+
+        window.onload = loadBalance;
+    </script>
+</body>
+</html>

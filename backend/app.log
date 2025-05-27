@@ -1,0 +1,52 @@
+{"level":"info","message":"Database initialized, admin user created if not exists"}
+{"level":"info","message":"Server running on http://0.0.0.0:5000"}
+{"level":"info","message":"Token verified for userId 2"}
+{"level":"info","message":"Token verified for userId 2"}
+{"level":"error","message":"Database error in get_cart: SQLITE_ERROR: no such column: c.created_at"}
+{"level":"error","message":"Database error in get_cart: SQLITE_ERROR: no such column: c.created_at"}
+{"level":"error","message":"Database error in get_cart: SQLITE_ERROR: no such column: c.created_at"}
+{"level":"error","message":"Database error in get_cart: SQLITE_ERROR: no such column: c.created_at"}
+{"level":"info","message":"Fetched 1 products for user 2"}
+{"level":"info","message":"Fetched 1 products for user 2"}
+{"level":"info","message":"Fetched 1 products for user 2"}
+{"level":"info","message":"Token verified for userId 2"}
+{"level":"info","message":"Fetched 1 products for user 2"}
+{"level":"info","message":"Token verified for userId 2"}
+{"level":"error","message":"Database error in add_to_cart: SQLITE_ERROR: table cart has no column named created_at"}
+{"level":"info","message":"Database initialized, admin user created if not exists"}
+{"level":"info","message":"Server running on http://0.0.0.0:5000"}
+{"level":"warn","message":"Token user not found"}
+{"level":"warn","message":"Token user not found"}
+{"level":"warn","message":"Token user not found"}
+{"level":"warn","message":"Token user not found"}
+{"level":"info","message":"User registered: user1@gmail.com, userId: 2"}
+{"level":"info","message":"User registered: user@gmail.com, userId: 3"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Registration failed: User user2@gmail.com already exists"}
+{"level":"info","message":"User registered: user2@gmail.com, userId: 4"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}
+{"level":"warn","message":"Invalid token"}

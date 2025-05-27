@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BFM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-blue-600 text-white p-4">
+        <h1 class="text-2xl font-bold">BFM Admin Panel</h1>
+    </header>
+    <main class="container mx-auto p-4">
+        <h2 class="text-xl font-semibold mb-4">All Users (Buyers & Sellers)</h2>
+        <div class="overflow-x-auto mb-8">
+            <table class="min-w-full bg-white rounded shadow">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-700">
+                        <th class="py-2 px-4 text-left">ID</th>
+                        <th class="py-2 px-4 text-left">Name</th>
+                        <th class="py-2 px-4 text-left">Email</th>
+                        <th class="py-2 px-4 text-left">Phone</th>
+                        <th class="py-2 px-4 text-left">Address</th>
+                        <th class="py-2 px-4 text-left">Role</th>
+                        <th class="py-2 px-4 text-left">Balance</th>
+                        <th class="py-2 px-4 text-left">Approved</th>
+                        <th class="py-2 px-4 text-left">MSME Number</th>
+                        <th class="py-2 px-4 text-left">Aadhar Number</th>
+                        <th class="py-2 px-4 text-left">Account Number</th>
+                    </tr>
+                </thead>
+                <tbody id="allUsersTable"></tbody>
+            </table>
+        </div>
+
+        <h2 class="text-xl font-semibold mb-4">Pending Sellers</h2>
+        <div id="pendingSellers" class="space-y-4 mb-8"></div>
+
+        <h2 class="text-xl font-semibold mb-4">Approval History</h2>
+        <div id="approvalHistory" class="space-y-4"></div>
+    </main>
+    <script>
+        async function loadAllUsers() {
+            try {
+                const response = await fetch('/api/admin/all-users');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const users = await response.json();
+                const tableBody = document.getElementById('allUsersTable');
+                tableBody.innerHTML = '';
+                if (users.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="11" class="py-2 px-4 text-gray-600">No users found.</td></tr>';
+                    return;
+                }
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b';
+                    row.innerHTML = `
+                        <td class="py-2 px-4">${user.id}</td>
+                        <td class="py-2 px-4">${user.name}</td>
+                        <td class="py-2 px-4">${user.email}</td>
+                        <td class="py-2 px-4">${user.phone}</td>
+                        <td class="py-2 px-4">${user.address}</td>
+                        <td class="py-2 px-4">${user.role}</td>
+                        <td class="py-2 px-4">${user.balance.toFixed(2)}</td>
+                        <td class="py-2 px-4">${user.approved ? 'Yes' : 'No'}</td>
+                        <td class="py-2 px-4">${user.msmeNumber || '-'}</td>
+                        <td class="py-2 px-4">${user.adharNumber || '-'}</td>
+                        <td class="py-2 px-4">${user.accountNumber || '-'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('allUsersTable').innerHTML = '<tr><td colspan="11" class="py-2 px-4 text-red-600">Error loading users. Please try again.</td></tr>';
+            }
+        }
+
+        async function loadPendingSellers() {
+            try {
+                const response = await fetch('/api/admin/pending-sellers');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const sellers = await response.json();
+                const sellersDiv = document.getElementById('pendingSellers');
+                sellersDiv.innerHTML = '';
+                if (sellers.length === 0) {
+                    sellersDiv.innerHTML = '<p class="text-gray-600">No pending sellers.</p>';
+                    return;
+                }
+                sellers.forEach(seller => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white p-4 rounded shadow';
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-semibold text-lg">${seller.name}</h3>
+                                <p class="text-gray-600">Email: ${seller.email}</p>
+                                <p class="text-gray-600">MSME Number: ${seller.msmeNumber}</p>
+                                <p class="text-gray-600">Address: ${seller.address}</p>
+                                <p class="text-gray-600">Aadhar Number: ${seller.adharNumber}</p>
+                                <p class="text-gray-600">Account Number: ${seller.accountNumber}</p>
+                                <p class="text-gray-600">Document: ${seller.msmeDoc}</p>
+                            </div>
+                            <div class="space-x-2">
+                                <button onclick="approveSeller(${seller.id})" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Approve</button>
+                                <button onclick="downloadDoc('${seller.msmeDoc}')" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Download Doc</button>
+                                <button onclick="viewDoc('${seller.msmeDoc}')" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">View Doc</button>
+                            </div>
+                        </div>
+                    `;
+                    sellersDiv.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error loading pending sellers:', error);
+                document.getElementById('pendingSellers').innerHTML = '<p class="text-red-600">Error loading sellers. Please try again.</p>';
+            }
+        }
+
+        async function loadApprovalHistory() {
+            try {
+                const response = await fetch('/api/admin/approval-history');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const history = await response.json();
+                const historyDiv = document.getElementById('approvalHistory');
+                historyDiv.innerHTML = '';
+                if (history.length === 0) {
+                    historyDiv.innerHTML = '<p class="text-gray-600">No approval history.</p>';
+                    return;
+                }
+                history.forEach(record => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white p-4 rounded shadow';
+                    div.innerHTML = `
+                        <h3 class="font-semibold text-lg">Seller: ${record.seller_name}</h3>
+                        <p class="text-gray-600">Email: ${record.seller_email}</p>
+                        <p class="text-gray-600">Approved by: ${record.admin_name}</p>
+                        <p class="text-gray-600">Approved at: ${new Date(record.approved_at).toLocaleString()}</p>
+                    `;
+                    historyDiv.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error loading approval history:', error);
+                document.getElementById('approvalHistory').innerHTML = '<p class="text-red-600">Error loading approval history. Please try again.</p>';
+            }
+        }
+
+        async function approveSeller(userId) {
+            try {
+                const response = await fetch(`/api/admin/approve-seller/${userId}`, { method: 'PUT' });
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Seller approved!');
+                    loadPendingSellers();
+                    loadApprovalHistory();
+                    loadAllUsers();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error approving seller:', error);
+                alert('Error approving seller. Please try again.');
+            }
+        }
+
+        function downloadDoc(filename) {
+            window.location.href = `/api/admin/download-doc/${filename}`;
+        }
+
+        function viewDoc(filename) {
+            window.open(`/api/admin/download-doc/${filename}`, '_blank');
+        }
+
+        loadAllUsers();
+        loadPendingSellers();
+        loadApprovalHistory();
+    </script>
+</body>
+</html>
